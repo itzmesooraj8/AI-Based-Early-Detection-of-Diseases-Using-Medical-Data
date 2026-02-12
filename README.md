@@ -1,10 +1,10 @@
-# VitalGuard AI - Next-Gen Medical Diagnostics (2026 Edition)
+# VitalGuard AI - Next-Gen Medical Diagnostics 
 
 ![VitalGuard AI Banner](https://via.placeholder.com/1200x400?text=VitalGuard+AI+-+Academic+Research+Project)
 
 > **"Detect Early. Live Longer."**
 
-**VitalGuard AI** is a comprehensive **Academic Research & Demonstration Project** developed for advanced college coursework. It showcases the potential of a state-of-the-art medical diagnostic platform leveraging **TensorFlow 3.0** and **Next.js 15** to deliver real-time, high-precision skin cancer detection inference. Built with a "God Tier" aesthetic and engineered for the 2026 technological landscape, this prototype bridges the gap between deep learning theory and accessible healthcare application.
+**VitalGuard AI** is a comprehensive **Academic Research & Demonstration Project** developed for advanced college coursework. It showcases the potential of a state-of-the-art medical diagnostic platform leveraging **TensorFlow 3.0** and **Next.js 15** to deliver real-time, high-precision skin cancer detection inference. Built with a  aesthetic and engineered for the 2026 technological landscape, this prototype bridges the gap between deep learning theory and accessible healthcare application.
 
 ## 🚀 Key Features
 
