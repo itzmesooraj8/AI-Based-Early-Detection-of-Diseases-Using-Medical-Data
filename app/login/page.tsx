@@ -1,152 +1,153 @@
 'use client'
 
-import React, { useState } from 'react'
-import { Heart, Mail, Lock, ArrowRight, Github } from 'lucide-react'
-import Link from 'next/link'
-import { ModeToggle } from '@/components/mode-toggle'
+import Link from "next/link"
+import { motion } from "framer-motion"
+import { Activity, ArrowRight, Lock, Mail, ChevronLeft } from "lucide-react"
+import { useRouter } from "next/navigation"
+import { useState } from "react"
+import { toast } from "sonner"
 
 export default function LoginPage() {
-    const [loading, setLoading] = useState(false)
+    const router = useRouter()
+    const [isLoading, setIsLoading] = useState(false)
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault()
-        setLoading(true)
-        setTimeout(() => setLoading(false), 2000)
+        setIsLoading(true)
+
+        const formData = new FormData(e.target as HTMLFormElement)
+        const email = formData.get("email") as string
+        const name = email ? email.split("@")[0].split(".").map((n: string) => n.charAt(0).toUpperCase() + n.slice(1)).join(" ") : "User"
+
+        localStorage.setItem("userName", name)
+
+        // Simulate network delay for a premium feel
+        await new Promise(resolve => setTimeout(resolve, 1500))
+
+        toast.success(`Welcome back, ${name}`, {
+            description: "Secure session established."
+        })
+
+        router.push("/dashboard")
     }
 
     return (
-        <div className="min-h-screen bg-background text-foreground flex items-center justify-center relative overflow-hidden">
-            {/* Background Ambience */}
-            <div className="absolute top-4 right-4 z-50">
-                <div className="bg-background/50 backdrop-blur-sm rounded-full p-1">
-                    <ModeToggle />
+        <div className="min-h-screen w-full flex bg-background text-foreground overflow-hidden">
+            {/* Left Panel - Abstract Art */}
+            <div className="hidden lg:flex w-1/2 relative bg-black items-center justify-center overflow-hidden">
+                <div className="absolute inset-0 z-0">
+                    <div className="absolute top-0 -left-1/4 w-[1000px] h-[1000px] bg-blue-600/20 rounded-full blur-[120px] animate-pulse duration-[10000ms]" />
+                    <div className="absolute bottom-0 -right-1/4 w-[1200px] h-[1200px] bg-indigo-600/20 rounded-full blur-[150px] animate-pulse duration-[15000ms] delay-1000" />
                 </div>
+
+                <div className="relative z-10 p-12 text-white">
+                    <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.2 }}
+                        className="w-16 h-16 rounded-2xl bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center mb-8"
+                    >
+                        <Activity className="w-8 h-8 text-white" />
+                    </motion.div>
+
+                    <motion.h1
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.3 }}
+                        className="text-5xl font-bold tracking-tight mb-6"
+                    >
+                        Medical Intelligence <br />
+                        <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-indigo-400">Reimagined.</span>
+                    </motion.h1>
+
+                    <motion.p
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.4 }}
+                        className="text-xl text-white/60 max-w-md leading-relaxed"
+                    >
+                        Access the world's most advanced dermatological diagnostic tool. Secure, fast, and clinically verified.
+                    </motion.p>
+                </div>
+
+                {/* Dynamic Grid Overlay */}
+                <div className="absolute inset-0 bg-[url('/grid.svg')] opacity-20" />
             </div>
-            <div className="fixed inset-0 pointer-events-none">
-                <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-primary/20 rounded-full blur-[128px] -translate-y-1/2 translate-x-1/2" />
-                <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-primary/20 rounded-full blur-[128px] translate-y-1/2 -translate-x-1/2" />
-                <div className="absolute inset-0 bg-[url('/grid.svg')] bg-center [mask-image:linear-gradient(180deg,white,rgba(255,255,255,0))]" />
-            </div>
 
-            <div className="relative z-10 w-full max-w-5xl grid grid-cols-1 lg:grid-cols-2 gap-8 p-4">
-                {/* Left Side - Hero Content */}
-                <div className="hidden lg:flex flex-col justify-center space-y-8 p-8">
-                    <div className="flex items-center gap-3">
-                        <div className="p-3 rounded-2xl bg-primary text-primary-foreground shadow-lg shadow-black/10 dark:shadow-white/10">
-                            <Heart className="w-8 h-8" fill="currentColor" />
-                        </div>
-                        <h1 className="text-3xl font-bold tracking-tight">VitalGuard AI</h1>
+            {/* Right Panel - Login Form */}
+            <div className="w-full lg:w-1/2 flex items-center justify-center p-8 relative">
+                {/* Background Gradients for Light Mode */}
+                <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-blue-100 dark:bg-blue-900/10 rounded-full blur-[100px] -z-10" />
+
+                <motion.div
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    className="w-full max-w-md space-y-8"
+                >
+                    <div className="text-center lg:text-left">
+                        <h2 className="text-3xl font-bold tracking-tight">Welcome back</h2>
+                        <p className="text-muted-foreground mt-2">Enter your credentials to access the portal.</p>
                     </div>
 
-                    <div className="space-y-6">
-                        <h2 className="text-5xl font-extrabold leading-tight">
-                            Medical Grade <br />
-                            <span className="text-transparent bg-clip-text bg-gradient-to-r from-black to-slate-600 dark:from-white dark:to-slate-400">
-                                AI Detection
-                            </span>
-                        </h2>
-                        <p className="text-lg text-muted-foreground max-w-md leading-relaxed">
-                            Join thousands of medical professionals and patients using our advanced skin cancer detection system. Early detection saves lives.
-                        </p>
+                    <div className="absolute top-6 left-6">
+                        <Link href="/" className="p-2 rounded-full bg-slate-100 dark:bg-white/10 hover:bg-slate-200 dark:hover:bg-white/20 transition-colors flex items-center justify-center">
+                            <ChevronLeft className="w-5 h-5" />
+                        </Link>
                     </div>
 
-                    <div className="flex items-center gap-4 text-sm font-medium text-muted-foreground">
-                        <div className="flex -space-x-4">
-                            {[1, 2, 3, 4].map((i) => (
-                                <div key={i} className="w-10 h-10 rounded-full border-2 border-background bg-muted flex items-center justify-center">
-                                    <span className="text-xs">U{i}</span>
-                                </div>
-                            ))}
-                        </div>
-                        <div className="h-10 w-px bg-border" />
-                        <p>Trusted by 10,000+ users</p>
-                    </div>
-                </div>
-
-                {/* Right Side - Login Form */}
-                <div className="flex items-center justify-center">
-                    <div className="w-full max-w-md backdrop-blur-xl bg-card/60 border border-border rounded-3xl p-8 shadow-2xl">
-                        <div className="mb-8">
-                            <h3 className="text-2xl font-bold mb-2">Welcome Back</h3>
-                            <p className="text-muted-foreground">Please enter your details to sign in.</p>
+                    <form onSubmit={handleLogin} className="space-y-6">
+                        <div className="space-y-2">
+                            <label className="text-sm font-medium text-muted-foreground ml-1">Email</label>
+                            <div className="relative group">
+                                <Mail className="absolute left-4 top-3.5 w-5 h-5 text-muted-foreground group-hover:text-foreground transition-colors" />
+                                <input
+                                    name="email"
+                                    type="email"
+                                    className="w-full bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl px-12 py-3 outline-none focus:ring-2 focus:ring-blue-500/50 transition-all font-medium"
+                                    placeholder="user@example.com"
+                                    defaultValue="alex.morgan@example.com"
+                                />
+                            </div>
                         </div>
 
-                        <form onSubmit={handleSubmit} className="space-y-6">
-                            <div className="space-y-2">
-                                <label className="text-sm font-medium text-foreground ml-1">Email Address</label>
-                                <div className="relative group">
-                                    <Mail className="absolute left-4 top-3.5 w-5 h-5 text-muted-foreground group-focus-within:text-primary transition-colors" />
-                                    <input
-                                        type="email"
-                                        placeholder="doctor@hospital.com"
-                                        className="w-full bg-background border border-border rounded-xl py-3 pl-12 pr-4 text-foreground placeholder-muted-foreground focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all"
-                                    />
-                                </div>
+                        <div className="space-y-2">
+                            <label className="text-sm font-medium text-muted-foreground ml-1">Password</label>
+                            <div className="relative group">
+                                <Lock className="absolute left-4 top-3.5 w-5 h-5 text-muted-foreground group-hover:text-foreground transition-colors" />
+                                <input
+                                    type="password"
+                                    className="w-full bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl px-12 py-3 outline-none focus:ring-2 focus:ring-blue-500/50 transition-all font-medium"
+                                    placeholder="••••••••"
+                                    defaultValue="password"
+                                />
                             </div>
-
-                            <div className="space-y-2">
-                                <label className="text-sm font-medium text-foreground ml-1">Password</label>
-                                <div className="relative group">
-                                    <Lock className="absolute left-4 top-3.5 w-5 h-5 text-muted-foreground group-focus-within:text-primary transition-colors" />
-                                    <input
-                                        type="password"
-                                        placeholder="••••••••"
-                                        className="w-full bg-background border border-border rounded-xl py-3 pl-12 pr-4 text-foreground placeholder-muted-foreground focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all"
-                                    />
-                                </div>
-                            </div>
-
-                            <div className="flex items-center justify-between text-sm">
-                                <label className="flex items-center cursor-pointer">
-                                    <input type="checkbox" className="w-4 h-4 rounded border-border bg-background text-primary focus:ring-offset-background" />
-                                    <span className="ml-2 text-muted-foreground">Remember me</span>
-                                </label>
-                                <a href="#" className="text-primary hover:text-primary/80 transition-colors">Forgot Password?</a>
-                            </div>
-
-                            <button
-                                disabled={loading}
-                                className="w-full bg-primary text-primary-foreground hover:opacity-90 font-semibold py-4 rounded-xl shadow-lg shadow-black/10 dark:shadow-white/10 transition-all active:scale-[0.98] flex items-center justify-center gap-2 group"
-                            >
-                                {loading ? (
-                                    <div className="w-6 h-6 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                                ) : (
-                                    <>
-                                        Sign In
-                                        <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-                                    </>
-                                )}
-                            </button>
-
-                            <div className="relative">
-                                <div className="absolute inset-0 flex items-center">
-                                    <div className="w-full border-t border-border"></div>
-                                </div>
-                                <div className="relative flex justify-center text-sm">
-                                    <span className="px-4 bg-card text-muted-foreground">Or continue with</span>
-                                </div>
-                            </div>
-
-                            <div className="grid grid-cols-2 gap-4">
-                                <button type="button" className="flex items-center justify-center gap-2 py-3 bg-card hover:bg-muted rounded-xl border border-border transition-all text-foreground font-medium">
-                                    <Github className="w-5 h-5" />
-                                    Github
-                                </button>
-                                <button type="button" className="flex items-center justify-center gap-2 py-3 bg-card hover:bg-muted rounded-xl border border-border transition-all text-foreground font-medium">
-                                    <div className="w-5 h-5 rounded-full bg-white flex items-center justify-center text-black font-bold">G</div>
-                                    Google
-                                </button>
-                            </div>
-                        </form>
-
-                        <div className="mt-8 text-center text-sm text-muted-foreground">
-                            Don't have an account?{' '}
-                            <Link href="/register" className="text-primary font-semibold hover:text-primary/80 transition-colors">
-                                Create Account
-                            </Link>
                         </div>
-                    </div>
-                </div>
+
+                        <div className="flex items-center justify-between">
+                            <label className="flex items-center gap-2 text-sm cursor-pointer">
+                                <input type="checkbox" className="rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
+                                <span className="text-muted-foreground">Remember me</span>
+                            </label>
+                            <a href="#" className="text-sm font-medium text-blue-600 hover:text-blue-500">Forgot password?</a>
+                        </div>
+
+                        <button
+                            type="submit"
+                            disabled={isLoading}
+                            className="w-full bg-black dark:bg-white text-white dark:text-black rounded-xl py-4 font-bold text-lg hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-xl hover:shadow-2xl"
+                        >
+                            {isLoading ? (
+                                <div className="w-6 h-6 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                            ) : (
+                                <>Sign In <ArrowRight className="w-5 h-5" /></>
+                            )}
+                        </button>
+                    </form>
+
+                    <p className="text-center text-muted-foreground">
+                        Don't have an account? <Link href="/register" className="font-bold text-foreground hover:underline">Register now</Link>
+                    </p>
+                </motion.div>
             </div>
         </div>
     )

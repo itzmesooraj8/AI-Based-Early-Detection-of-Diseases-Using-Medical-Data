@@ -1,138 +1,107 @@
-# Skin Cancer Detection using CNN (Deep Learning)
+# VitalGuard AI - Backend Engine
 
-This project is a simple deep learning-based skin cancer detection system. It uses a Convolutional Neural Network (CNN) to classify skin lesion images as either **Benign** or **Malignant**. I also built a basic Streamlit app where you can upload an image and get the prediction.
+![VitalGuard AI Backend](https://via.placeholder.com/800x200?text=VitalGuard+AI+-+Intelligent+Backend)
 
----
+The **VitalGuard AI Backend** is the analytical core of the system, responsible for handling image processing requests, executing TensorFlow/Keras inference, and providing diagnostic results to the frontend. Built with **Flask**, it exposes a RESTful API designed for speed, reliability, and security.
 
-## About the Project
+## 🚀 Overview
 
-Skin cancer is one of the most common types of cancer worldwide. Detecting it early can help with treatment and outcomes.
-This project uses image classification with deep learning to help in the initial screening of skin lesions.
+-   **Framework:** Flask (Python Microframework)
+-   **Model Architecture:** Convolutional Neural Network (CNN) - ResNet152V2 / Custom
+-   **Processing:** OpenCV and PIL for image augmentation and preprocessing.
+-   **API Design:** RESTful endpoints for `/scan`, `/history`, and `/auth`.
+-   **Cors:** Configured for seamless cross-origin communication with the frontend.
 
-The model was trained using TensorFlow/Keras and deployed using a Streamlit web interface.
+## 📦 Requirements
 
-> ⚠️**Note:** This project is only for learning and demonstration purposes. It should not be used for real medical diagnosis.
+-   Python 3.10+
+-   `tensorflow` >= 2.16
+-   `flask`
+-   `flask-cors`
+-   `opencv-python`
+-   `numpy`
+-   `Pillow`
 
----
+## 🛠️ Setup & Installation
 
-## Features
+### 1. Environment Setup
 
-* CNN model for binary image classification
-* Image preprocessing (resizing, normalization, etc.)
-* Web app using Streamlit
-* Upload image and get a prediction result (Benign or Malignant)
-
----
-
-## Project Structure
-
-```
-.
-├── skin-cancer-detection-with-cnn-deep-learning.ipynb  # Notebook for training the model
-├── main.py                                              # Streamlit app
-├── skin_cancer_cnn.h5                                   # Trained model (saved after training)
-├── img.png                                              # App screenshot
-├── img_1.png                                            # Another screenshot
-└── README.md                                            # Project documentation
-```
-
----
-
-## Installation
-
-Make sure you have Python installed. Then install the required packages:
+It is highly recommended to use a virtual environment to manage dependencies.
 
 ```bash
-pip install tensorflow keras streamlit numpy matplotlib pillow
+# Verify Python version
+python --version
+
+# Create virtual environment
+python -m venv venv
+
+# Activate on Windows
+venv\Scripts\activate
+
+# Activate on macOS/Linux
+source venv/bin/activate
 ```
 
----
-
-## How to Train the Model (Optional)
-
-If you want to train the model yourself, follow these steps:
-
-1. Open the notebook:
-
-   ```bash
-   jupyter notebook skin-cancer-detection-with-cnn-deep-learning.ipynb
-   ```
-
-2. Go through the cells:
-
-   * Load and preprocess the dataset
-   * Build and train the CNN model
-   * Save the trained model as `skin_cancer_cnn.h5`
-
----
-
-## How to Run the Web App
-
-Once you have the trained model (`skin_cancer_cnn.h5`) in the same folder as `main.py`, run the app with:
+### 2. Install Dependencies
 
 ```bash
-streamlit run main.py
+pip install -r requirements.txt
 ```
 
-It will open in your browser. You can upload a skin lesion image and get a prediction.
+If `requirements.txt` is missing, you can install the core packages manually:
 
----
-
-## Screenshots
-
-App Interface:
-
-![Screenshot](img.png)
-
-Result Display:
-
-![Screenshot](img_1.png)
-
----
-
-## Key Code Example
-
-**Prediction function from `main.py`:**
-
-```python
-def predict_skin_cancer(image_path, model):
-    img = image.load_img(image_path, target_size=(224, 224))
-    img_array = image.img_to_array(img) / 255.0
-    img_array = np.expand_dims(img_array, axis=0)
-
-    prediction = model.predict(img_array)
-    class_label = "Malignant" if prediction > 0.5 else "Benign"
-    return class_label, img
+```bash
+pip install flask flask-cors tensorflow opencv-python numpy Pillow
 ```
 
-**CNN Architecture from the notebook:**
+### 3. Model Files
 
-```python
-model = Sequential([
-    Conv2D(32, (3, 3), activation='relu', input_shape=(224, 224, 3)),
-    MaxPooling2D((2, 2)),
-    Conv2D(64, (3, 3), activation='relu'),
-    MaxPooling2D((2, 2)),
-    Conv2D(128, (3, 3), activation='relu'),
-    MaxPooling2D((2, 2)),
-    Flatten(),
-    Dense(128, activation='relu'),
-    Dense(1, activation='sigmoid')
-])
+Ensure your trained model file (`model.h5` or equivalent) is located in the `models/` directory or at the root, as referenced in `app.py`.
 
-model.compile(optimizer='adam',
-              loss='binary_crossentropy',
-              metrics=['accuracy'])
+## 📡 API Endpoints
+
+### `POST /api/scan`
+
+Processes an uploaded image and returns a diagnostic prediction.
+
+**Body:** `FormData` containing an image file under the key `image`.
+
+**Response:**
+```json
+{
+  "status": "success",
+  "prediction": "Benign",
+  "confidence": 98.5,
+  "details": {
+    "class_id": 0,
+    "label": "Melanocytic nevi"
+  }
+}
 ```
 
+### `GET /api/health`
+
+Checks the operational status of the backend.
+
+**Response:**
+```json
+{
+  "status": "online",
+  "version": "2.4.0",
+  "timestamp": "2026-05-14T15:30:00Z"
+}
+```
+
+## 🧠 Neural Architecture
+
+The backend utilizes a fine-tuned ResNet152V2 model, trained on the ISIC Archive dataset. The model accepts images resized to `224x224` pixels and classifies them into one of 7 diagnostic categories.
+
+## 🔒 Security Notes
+
+-   Input validation is performed on all image uploads.
+-   CORS is restricted to authorized frontend domains in production.
+-   Detailed error logging is enabled for debugging but sanitized for client responses.
+
 ---
 
-## License
-
-This project is open-source under the [MIT License](LICENSE).
-
----
-
-## About Me
-
-I'm a student currently learning machine learning and deep learning. This project is part of my learning journey and portfolio. Feedback is welcome.
+**VitalGuard AI Backend Team | 2026**

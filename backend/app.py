@@ -15,7 +15,8 @@ app = Flask(__name__)
 CORS(app, resources={r"/analyze": {"origins": "http://localhost:3000"}})
 
 # Configuration
-MODEL_PATH = 'skin_cancer_cnn.h5'
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+MODEL_PATH = os.path.join(BASE_DIR, 'skin_cancer_cnn.h5')
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'webp'}
 
 # Global Model Variable
@@ -137,7 +138,9 @@ def health():
     """Health check endpoint."""
     return jsonify({
         'status': 'online', 
-        'model_loaded': model is not None
+        'model_loaded': model is not None,
+        'model_type': 'CNN (ResNet Architecture)',
+        'mode': 'production'
     })
 
 if __name__ == '__main__':

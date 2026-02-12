@@ -2,6 +2,7 @@
 
 import { useState, useRef, useCallback, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
+import Link from "next/link"
 import Webcam from "react-webcam"
 import {
   Camera,
@@ -11,7 +12,8 @@ import {
   AlertCircle,
   CheckCircle2,
   RefreshCcw,
-  Maximize2
+  Maximize2,
+  ChevronLeft
 } from "lucide-react"
 import { toast } from "sonner"
 import { ModeToggle } from "@/components/mode-toggle"
@@ -62,7 +64,7 @@ export default function ScannerPage() {
     formData.append('image', blob, 'scan.jpg')
 
     try {
-      const response = await fetch('http://localhost:5000/analyze', {
+      const response = await fetch('/api/analyze', {
         method: 'POST',
         body: formData,
       })
@@ -114,11 +116,17 @@ export default function ScannerPage() {
         animate={{ y: 0, opacity: 1 }}
         className="w-full p-6 flex justify-between items-center z-50 glass-panel-light dark:glass-panel sticky top-0"
       >
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-black dark:bg-white rounded-xl flex items-center justify-center shadow-lg">
-            <Zap className="w-6 h-6 text-white dark:text-black" />
+        <div className="flex items-center gap-6">
+          <Link href="/dashboard" className="flex items-center gap-2 px-4 py-2 rounded-full bg-slate-100 dark:bg-white/10 hover:bg-slate-200 dark:hover:bg-white/20 transition-colors group">
+            <ChevronLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
+            <span className="text-sm font-medium">Dashboard</span>
+          </Link>
+          <div className="hidden md:flex items-center gap-3">
+            <div className="w-10 h-10 bg-black dark:bg-white rounded-xl flex items-center justify-center shadow-lg">
+              <Zap className="w-6 h-6 text-white dark:text-black" />
+            </div>
+            <span className="font-bold text-xl tracking-tight">VitalGuard AI</span>
           </div>
-          <span className="font-bold text-xl tracking-tight">VitalGuard AI</span>
         </div>
 
         <div className="flex items-center gap-4">
