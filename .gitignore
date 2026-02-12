@@ -8,3 +8,11 @@ node_modules/
 .next/
 .env*.local
 .DS_Store
+# Local Python virtual environments
+venv/
+.venv/
+backend/.venv/
+
+# Editor folders
+.vscode/
+.idea/

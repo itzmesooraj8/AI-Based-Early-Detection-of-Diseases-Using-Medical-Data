@@ -146,4 +146,5 @@ def health():
 if __name__ == '__main__':
     print("Starting VitalGuard AI Backend...")
     # Run on all interfaces (0.0.0.0) to ensure accessibility
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    # Disable the reloader and debug mode for stable background execution
+    app.run(host='0.0.0.0', port=5000, debug=False, use_reloader=False)

@@ -100,6 +100,7 @@ VitalGuard-AI/
 │   ├── models/           # Pre-trained .h5 models
 │   └── ...
 ├── components/           # Reusable React components
+├── research/             # Academic R&D (Notebooks, Prototypes)
 ├── public/               # Static assets
 └── styles/               # Global styles
 ```
