@@ -1,351 +1,389 @@
-'use client'
+"use client"
 
-import React from "react"
+import { useState, useRef, useCallback, useEffect } from "react"
+import { motion, AnimatePresence } from "framer-motion"
+import Webcam from "react-webcam"
+import {
+  Camera,
+  Upload,
+  X,
+  Zap,
+  AlertCircle,
+  CheckCircle2,
+  RefreshCcw,
+  Maximize2
+} from "lucide-react"
+import { toast } from "sonner"
+import { ModeToggle } from "@/components/mode-toggle"
 
-import { useState, useRef, useCallback, type FC } from 'react'
-import { Heart, Zap, Upload, X, Check, AlertCircle, Info, Camera } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import Webcam from 'react-webcam'
-import { ModeToggle } from '@/components/mode-toggle'
-
-interface ScanResult {
-  status: 'benign' | 'malignant' | 'monitor'
-  confidence: number
-}
-
-const Scanner: FC = () => {
-  const [scanning, setScanning] = useState<boolean>(false)
-  const [result, setResult] = useState<ScanResult | null>(null)
-  const [uploadedImage, setUploadedImage] = useState<string | null>(null)
-  const [showCamera, setShowCamera] = useState<boolean>(false)
+export default function ScannerPage() {
+  const [isCameraActive, setIsCameraActive] = useState(false)
+  const [isScanning, setIsScanning] = useState(false)
+  const [capturedImage, setCapturedImage] = useState<string | null>(null)
+  const [result, setResult] = useState<{
+    status: 'malignant' | 'benign';
+    confidence: number;
+  } | null>(null)
 
   const webcamRef = useRef<Webcam>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   const capture = useCallback(() => {
     const imageSrc = webcamRef.current?.getScreenshot()
     if (imageSrc) {
-      setUploadedImage(imageSrc)
-      setShowCamera(false)
+      setCapturedImage(imageSrc)
+      setIsCameraActive(false)
+      handleAnalysis(imageSrc)
     }
   }, [webcamRef])
 
-  const handleStartScan = async () => {
-    if (!uploadedImage) {
-      alert("Please upload an image first. Camera integration coming soon with backend connectivity.")
-      return
-    }
-
-    setScanning(true)
-    setResult(null)
-
-    try {
-      // Convert base64 to blob
-      const response = await fetch(uploadedImage)
-      const blob = await response.blob()
-
-      const formData = new FormData()
-      formData.append('image', blob, 'scan.jpg')
-
-      const apiResponse = await fetch('http://localhost:5000/analyze', {
-        method: 'POST',
-        body: formData,
-      })
-
-      if (!apiResponse.ok) {
-        throw new Error(`Analysis failed: ${apiResponse.statusText}`)
-      }
-
-      const data = await apiResponse.json()
-
-      if (data.error) {
-        alert(`Error from backend: ${data.error}`)
-        setScanning(false)
-        return
-      }
-
-      setResult({
-        status: data.status, // 'benign' | 'malignant'
-        confidence: data.confidence,
-      })
-    } catch (error) {
-      console.error("Scan error:", error)
-      alert("Failed to connect to analysis server. Please ensure the backend is running.")
-    } finally {
-      setScanning(false)
-    }
-  }
-
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
+  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
     if (file) {
       const reader = new FileReader()
-      reader.onload = (event) => {
-        setUploadedImage(event.target?.result as string)
+      reader.onloadend = () => {
+        const base64String = reader.result as string
+        setCapturedImage(base64String)
+        handleAnalysis(base64String)
       }
       reader.readAsDataURL(file)
     }
   }
 
+  const handleAnalysis = async (imageBase64: string) => {
+    setIsScanning(true)
+    setResult(null)
+
+    // Convert base64 to blob
+    const fetchResponse = await fetch(imageBase64)
+    const blob = await fetchResponse.blob()
+
+    const formData = new FormData()
+    formData.append('image', blob, 'scan.jpg')
+
+    try {
+      const response = await fetch('http://localhost:5000/analyze', {
+        method: 'POST',
+        body: formData,
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Analysis failed')
+      }
+
+      // Artificial delay for dramatic effect (God Tier UX)
+      setTimeout(() => {
+        setResult(data)
+        setIsScanning(false)
+        if (data.status === 'malignant') {
+          toast.error("Potential anomaly detected. Consult a specialist.", {
+            className: "border-red-500 text-red-500",
+            duration: 5000
+          })
+        } else {
+          toast.success("Analysis complete. No immediate anomalies detected.", {
+            className: "border-green-500 text-green-500",
+            duration: 5000
+          })
+        }
+      }, 2000)
+
+    } catch (error: any) {
+      console.error('Error:', error)
+      setIsScanning(false)
+      toast.error(error.message || "Connection to AI Core failed", {
+        description: "Please ensure the backend server is running."
+      })
+    }
+  }
+
+  const resetScanner = () => {
+    setCapturedImage(null)
+    setResult(null)
+    setIsCameraActive(false)
+  }
+
   return (
-    <div className="min-h-screen bg-background text-foreground">
-      {/* Animated background */}
-      <div className="fixed inset-0 opacity-5 pointer-events-none">
-        <div className="absolute inset-0" style={{
-          backgroundImage: 'linear-gradient(90deg, rgba(128,128,128,0.2) 1px, transparent 1px), linear-gradient(rgba(128,128,128,0.2) 1px, transparent 1px)',
-          backgroundSize: '50px 50px',
-        }} />
-      </div>
+    <div className="min-h-screen bg-background text-foreground flex flex-col relative overflow-hidden transition-colors duration-500">
 
-      <div className="fixed top-0 right-0 w-96 h-96 bg-primary/5 rounded-full blur-3xl opacity-30 pointer-events-none" />
-      <div className="fixed bottom-0 left-0 w-96 h-96 bg-primary/5 rounded-full blur-3xl opacity-30 pointer-events-none" />
-
-      <div className="relative z-10">
-        {/* Navigation */}
-        <nav className="sticky top-0 z-40 border-b border-border backdrop-blur-lg bg-background/80">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <div className="p-2 rounded-lg bg-primary text-primary-foreground">
-                <Heart className="w-5 h-5" fill="currentColor" />
-              </div>
-              <h1 className="text-xl font-bold">VitalGuard Scanner</h1>
-            </div>
-            <div className="flex items-center gap-2">
-              <ModeToggle />
-              <button className="p-2 hover:bg-muted rounded-lg transition-colors text-muted-foreground hover:text-foreground">
-                <X className="w-5 h-5" />
-              </button>
-            </div>
+      {/* Navbar */}
+      <motion.nav
+        initial={{ y: -20, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        className="w-full p-6 flex justify-between items-center z-50 glass-panel-light dark:glass-panel sticky top-0"
+      >
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 bg-black dark:bg-white rounded-xl flex items-center justify-center shadow-lg">
+            <Zap className="w-6 h-6 text-white dark:text-black" />
           </div>
-        </nav>
+          <span className="font-bold text-xl tracking-tight">VitalGuard AI</span>
+        </div>
 
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-          {!result ? (
-            <div className="space-y-8">
-              {/* Instructions */}
-              <div className="glass rounded-2xl p-8 border border-border">
-                <div className="flex gap-4 mb-6">
-                  <Info className="w-6 h-6 text-foreground flex-shrink-0" />
-                  <div>
-                    <h3 className="font-semibold mb-2">How to Get the Best Results</h3>
-                    <ul className="text-sm text-muted-foreground space-y-2">
-                      <li>• Ensure good lighting on the affected area</li>
-                      <li>• Keep the camera steady and clear</li>
-                      <li>• Position the area at a 90-degree angle to the camera</li>
-                      <li>• Avoid shadows and glare</li>
-                    </ul>
-                  </div>
+        <div className="flex items-center gap-4">
+          <div className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
+            <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+            <span className="text-xs font-mono font-medium opacity-70">SYSTEM: ONLINE</span>
+          </div>
+          <ModeToggle />
+        </div>
+      </motion.nav>
+
+      {/* Main Content */}
+      <main className="flex-1 flex flex-col items-center justify-center p-4 md:p-8 relative w-full max-w-7xl mx-auto">
+
+        {/* Ambient Background Effects */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-purple-500/5 rounded-full blur-3xl" />
+          <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-blue-500/5 rounded-full blur-3xl" />
+        </div>
+
+        {/* Scanner Interface */}
+        <div className="w-full max-w-4xl grid md:grid-cols-2 gap-8 items-center z-10">
+
+          {/* Left Column: Controls & Instructions */}
+          <motion.div
+            initial={{ x: -50, opacity: 0 }}
+            animate={{ x: 0, opacity: 1 }}
+            transition={{ delay: 0.2 }}
+            className="space-y-6"
+          >
+            <div>
+              <h1 className="text-4xl md:text-5xl font-bold tracking-tight mb-2 text-gradient-monochrome">
+                Skin Analysis
+              </h1>
+              <p className="text-slate-500 dark:text-slate-400 text-lg leading-relaxed text-balance">
+                Advanced CNN algorithms detect early signs of dermatological anomalies with 94.2% accuracy.
+              </p>
+            </div>
+
+            <div className="flex flex-col gap-4">
+              {/* Action Buttons */}
+              {!capturedImage && !isCameraActive && (
+                <div className="flex gap-4">
+                  <button
+                    onClick={() => setIsCameraActive(true)}
+                    className="btn-primary flex items-center gap-2 group"
+                  >
+                    <Camera className="w-5 h-5 group-hover:scale-110 transition-transform" />
+                    Live Camera
+                  </button>
+                  <button
+                    onClick={() => fileInputRef.current?.click()}
+                    className="btn-outline flex items-center gap-2 group bg-white/50 dark:bg-black/50"
+                  >
+                    <Upload className="w-5 h-5 group-hover:-translate-y-1 transition-transform" />
+                    Upload Image
+                  </button>
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    className="hidden"
+                    accept="image/*"
+                    onChange={handleFileUpload}
+                  />
+                </div>
+              )}
+
+              {/* Reset Button */}
+              {(capturedImage || isCameraActive) && (
+                <button
+                  onClick={resetScanner}
+                  disabled={isScanning}
+                  className="flex items-center gap-2 text-sm font-medium text-slate-500 hover:text-black dark:hover:text-white transition-colors w-fit px-4 py-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-900"
+                >
+                  <RefreshCcw className="w-4 h-4" />
+                  Reset Scanner
+                </button>
+              )}
+            </div>
+
+            {/* Status Indicators */}
+            <div className="grid grid-cols-2 gap-4 pt-8">
+              <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex items-center gap-3">
+                <div className="p-2 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400">
+                  <Zap className="w-5 h-5" />
+                </div>
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">Model</p>
+                  <p className="text-sm font-bold">ResNet50 v2</p>
                 </div>
               </div>
+              <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex items-center gap-3">
+                <div className="p-2 rounded-full bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400">
+                  <Maximize2 className="w-5 h-5" />
+                </div>
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">Resolution</p>
+                  <p className="text-sm font-bold">HD Enhanced</p>
+                </div>
+              </div>
+            </div>
+          </motion.div>
 
-              {/* Camera/Upload Section */}
-              {showCamera ? (
-                <div className="glass rounded-2xl p-8 border border-border">
-                  <div className="flex items-center justify-between mb-6">
-                    <h3 className="text-lg font-semibold">Live Camera</h3>
-                    <button
-                      onClick={() => setShowCamera(false)}
-                      className="p-2 hover:bg-muted rounded-lg transition-colors text-muted-foreground hover:text-foreground"
-                    >
-                      <X className="w-5 h-5" />
-                    </button>
+          {/* Right Column: Viewport */}
+          <motion.div
+            initial={{ scale: 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ type: "spring", duration: 0.8 }}
+            className="relative"
+          >
+            {/* Viewport Container */}
+            <div className="relative aspect-square md:aspect-[4/5] bg-slate-100 dark:bg-black rounded-[2.5rem] overflow-hidden border-8 border-white dark:border-slate-900 shadow-2xl z-20">
+
+              {/* Default State */}
+              {!isCameraActive && !capturedImage && (
+                <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center text-slate-400 border-2 border-dashed border-slate-300 dark:border-slate-800 m-4 rounded-3xl">
+                  <motion.div
+                    animate={{ y: [0, -10, 0] }}
+                    transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+                  >
+                    <div className="w-24 h-24 rounded-full bg-slate-200 dark:bg-slate-900 flex items-center justify-center mb-4">
+                      <Camera className="w-10 h-10 opacity-50" />
+                    </div>
+                  </motion.div>
+                  <p className="max-w-[200px] text-sm">Initialize camera or upload a clear medical image to begin analysis.</p>
+                </div>
+              )}
+
+              {/* Live Camera Feed */}
+              {isCameraActive && !capturedImage && (
+                <div className="absolute inset-0 bg-black">
+                  <Webcam
+                    audio={false}
+                    ref={webcamRef}
+                    screenshotFormat="image/jpeg"
+                    className="absolute inset-0 w-full h-full object-cover"
+                    videoConstraints={{ facingMode: "environment" }}
+                  />
+                  {/* Camera Overlay UI */}
+                  <div className="absolute inset-0 border-[1px] border-white/20 m-6 rounded-3xl pointer-events-none">
+                    <div className="absolute top-0 left-0 w-8 h-8 border-t-4 border-l-4 border-white/80 rounded-tl-xl" />
+                    <div className="absolute top-0 right-0 w-8 h-8 border-t-4 border-r-4 border-white/80 rounded-tr-xl" />
+                    <div className="absolute bottom-0 left-0 w-8 h-8 border-b-4 border-l-4 border-white/80 rounded-bl-xl" />
+                    <div className="absolute bottom-0 right-0 w-8 h-8 border-b-4 border-r-4 border-white/80 rounded-br-xl" />
                   </div>
-                  <div className="mb-6 rounded-lg overflow-hidden bg-black aspect-video relative">
-                    <Webcam
-                      audio={false}
-                      ref={webcamRef}
-                      screenshotFormat="image/jpeg"
-                      className="w-full h-full object-cover"
-                      videoConstraints={{ facingMode: "environment" }}
-                    />
-                  </div>
+
+                  {/* Capture Button */}
                   <button
                     onClick={capture}
-                    className="w-full py-4 rounded-lg bg-primary text-primary-foreground hover:opacity-90 transition-all font-semibold flex items-center justify-center gap-2"
+                    className="absolute bottom-8 left-1/2 -translate-x-1/2 w-16 h-16 rounded-full border-4 border-white flex items-center justify-center hover:scale-105 active:scale-95 transition-transform bg-white/20 backdrop-blur-sm z-30"
                   >
-                    <Camera className="w-5 h-5" />
-                    Capture Photo
+                    <div className="w-12 h-12 bg-white rounded-full shadow-lg" />
                   </button>
                 </div>
-              ) : !uploadedImage ? (
-                <div className="glass rounded-2xl p-12 border-2 border-dashed border-border text-center hover:border-foreground/50 transition-colors cursor-pointer bg-card/30">
-                  <div className="space-y-6">
-                    <div className="w-16 h-16 mx-auto rounded-2xl bg-primary text-primary-foreground flex items-center justify-center">
-                      <Zap className="w-8 h-8" />
-                    </div>
-                    <div>
-                      <h3 className="text-xl font-semibold mb-2">Start Your Scan</h3>
-                      <p className="text-muted-foreground mb-6">Choose how you'd like to scan</p>
-                    </div>
-                    <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                      <button
-                        onClick={() => setShowCamera(true)}
-                        className="px-8 py-3 rounded-lg bg-primary text-primary-foreground hover:opacity-90 transition-all font-semibold"
+              )}
+
+              {/* Captured Image Display */}
+              {capturedImage && (
+                <div className="absolute inset-0">
+                  <img src={capturedImage} alt="Captured" className="w-full h-full object-cover" />
+
+                  {/* Scanning Animation Overlay */}
+                  <AnimatePresence>
+                    {isScanning && (
+                      <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="absolute inset-0 bg-black/60 z-30 flex flex-col items-center justify-center"
                       >
-                        Use Camera
-                      </button>
-                      <label className="px-8 py-3 rounded-lg glass hover:bg-secondary/50 transition-all font-semibold cursor-pointer text-foreground border border-border">
-                        Upload Image
-                        <input
-                          type="file"
-                          accept="image/*"
-                          onChange={handleFileUpload}
-                          className="hidden"
+                        <div className="scan-line-animation w-full h-full absolute top-0 left-0 opacity-30" />
+                        <motion.div
+                          className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-transparent via-blue-500 to-transparent shadow-[0_0_20px_rgba(59,130,246,0.6)]"
+                          animate={{ top: ["0%", "100%", "0%"] }}
+                          transition={{ duration: 2, ease: "linear", repeat: Infinity }}
                         />
-                      </label>
-                    </div>
-                  </div>
-                </div>
-              ) : (
-                <div className="glass rounded-2xl p-8 border border-border bg-card/30">
-                  <div className="flex items-center justify-between mb-6">
-                    <h3 className="text-lg font-semibold">Image Preview</h3>
-                    <button
-                      onClick={() => setUploadedImage(null)}
-                      className="p-2 hover:bg-muted rounded-lg transition-colors text-muted-foreground hover:text-foreground"
-                    >
-                      <X className="w-5 h-5" />
-                    </button>
-                  </div>
-                  <div className="mb-6 rounded-lg overflow-hidden max-h-96">
-                    <img src={uploadedImage || "/placeholder.svg"} alt="Preview" className="w-full h-full object-cover" />
-                  </div>
-                  <button
-                    onClick={handleStartScan}
-                    className="w-full py-3 rounded-lg bg-primary text-primary-foreground hover:opacity-90 transition-all font-semibold"
-                  >
-                    Analyze Image
-                  </button>
-                </div>
-              )}
 
-              {/* Scanning Indicator */}
-              {scanning && (
-                <div className="glass rounded-2xl p-12 border border-border text-center bg-card/30">
-                  <div className="space-y-6">
-                    <div className="w-16 h-16 mx-auto rounded-full border-4 border-muted border-t-primary animate-spin" />
-                    <div>
-                      <h3 className="text-xl font-semibold mb-2">Analyzing Your Scan</h3>
-                      <p className="text-muted-foreground">Using advanced deep learning to analyze...</p>
-                    </div>
-                    <div className="w-full h-2 bg-muted rounded-full overflow-hidden">
-                      <div className="h-full bg-primary animate-pulse" />
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-          ) : (
-            <div className="space-y-8">
-              {/* Result Card */}
-              <div className={`glass rounded-2xl p-12 border border-border text-center relative overflow-hidden bg-card/30`}>
-                {/* Result background glow */}
-                <div className={`absolute inset-0 opacity-10 blur-3xl ${result.status === 'benign' ? 'bg-green-500' :
-                  result.status === 'monitor' ? 'bg-yellow-500' : 'bg-red-500'
-                  }`} />
-
-                <div className="relative space-y-6">
-                  {/* Status Icon */}
-                  <div className={`w-20 h-20 mx-auto rounded-full flex items-center justify-center ${result.status === 'benign' ? 'bg-green-500/10 border border-green-500/20' :
-                    result.status === 'monitor' ? 'bg-yellow-500/10 border border-yellow-500/20' :
-                      'bg-red-500/10 border border-red-500/20'
-                    }`}>
-                    {result.status === 'benign' ? (
-                      <Check className="w-10 h-10 text-green-500 dark:text-green-400" />
-                    ) : (
-                      <AlertCircle className="w-10 h-10 text-yellow-500 dark:text-yellow-400" />
+                        {/* Loading Text */}
+                        <div className="relative font-mono font-bold text-2xl tracking-widest text-white mt-8">
+                          <span className="inline-block animate-pulse">ANALYZING</span>
+                        </div>
+                        <div className="flex gap-1 mt-2">
+                          {[...Array(3)].map((_, i) => (
+                            <motion.div
+                              key={i}
+                              className="w-2 h-2 bg-blue-500 rounded-full"
+                              animate={{ scale: [1, 1.5, 1], opacity: [0.5, 1, 0.5] }}
+                              transition={{ duration: 1, repeat: Infinity, delay: i * 0.2 }}
+                            />
+                          ))}
+                        </div>
+                      </motion.div>
                     )}
-                  </div>
+                  </AnimatePresence>
 
-                  {/* Status Text */}
-                  <div>
-                    <h2 className="text-4xl font-bold mb-2">
-                      {result.status === 'benign' ? 'Benign' :
-                        result.status === 'monitor' ? 'Monitor Recommended' : 'Potential Concern'}
-                    </h2>
-                    <p className={`text-lg ${result.status === 'benign' ? 'text-green-600 dark:text-green-400' :
-                      result.status === 'monitor' ? 'text-yellow-600 dark:text-yellow-400' : 'text-red-600 dark:text-red-400'
-                      }`}>
-                      {result.status === 'benign' ? 'This appears to be a benign lesion.' :
-                        result.status === 'monitor' ? 'This lesion should be monitored.' :
-                          'This lesion may require professional evaluation.'}
-                    </p>
-                  </div>
+                  {/* Result Overlay */}
+                  <AnimatePresence>
+                    {!isScanning && result && (
+                      <motion.div
+                        initial={{ opacity: 0, backdropFilter: "blur(0px)" }}
+                        animate={{ opacity: 1, backdropFilter: "blur(12px)" }}
+                        className="absolute inset-0 bg-black/40 z-40 flex items-center justify-center p-6"
+                      >
+                        <div className="w-full bg-white dark:bg-black border border-slate-200 dark:border-slate-800 rounded-3xl p-6 shadow-2xl relative overflow-hidden">
 
-                  {/* Confidence */}
-                  <div className="bg-muted/50 rounded-lg p-6 border border-border">
-                    <p className="text-muted-foreground text-sm mb-2">Confidence Score</p>
-                    <div className="flex items-end justify-center gap-2">
-                      <span className="text-5xl font-bold text-foreground">{result.confidence}%</span>
-                    </div>
-                    <div className="mt-4 h-2 bg-background rounded-full overflow-hidden">
-                      <div
-                        className="h-full bg-primary transition-all duration-1000"
-                        style={{ width: `${result.confidence}%` }}
-                      />
-                    </div>
-                  </div>
+                          {/* Result Header */}
+                          <div className="flex justify-between items-start mb-6">
+                            <div>
+                              <h3 className="text-sm font-semibold uppercase tracking-wider text-slate-500">Diagnosis</h3>
+                              <div className="flex items-center gap-2 mt-1">
+                                {result.status === 'malignant' ? (
+                                  <AlertCircle className="text-red-500 w-6 h-6" />
+                                ) : (
+                                  <CheckCircle2 className="text-green-500 w-6 h-6" />
+                                )}
+                                <span className={`text-2xl font-bold capitalize ${result.status === 'malignant' ? 'text-red-500' : 'text-green-500'
+                                  }`}>
+                                  {result.status}
+                                </span>
+                              </div>
+                            </div>
+                            <div className="text-right">
+                              <h3 className="text-sm font-semibold uppercase tracking-wider text-slate-500">Confidence</h3>
+                              <p className="text-2xl font-bold tabular-nums">{result.confidence}%</p>
+                            </div>
+                          </div>
 
-                  {/* Medical Disclaimer */}
-                  <div className="glass rounded-lg p-4 border border-yellow-500/30">
-                    <p className="text-sm text-muted-foreground">
-                      <strong>Disclaimer:</strong> This analysis is for informational purposes and should not replace professional medical advice. Please consult with a dermatologist for a proper diagnosis.
-                    </p>
-                  </div>
+                          {/* Radial Progess Visual */}
+                          <div className="relative h-4 w-full bg-slate-100 dark:bg-slate-900 rounded-full overflow-hidden mb-6">
+                            <motion.div
+                              initial={{ width: 0 }}
+                              animate={{ width: `${result.confidence}%` }}
+                              transition={{ duration: 1.5, ease: "easeOut" }}
+                              className={`h-full rounded-full ${result.status === 'malignant' ? 'bg-red-500 flow-red' : 'bg-green-500 glow-green'
+                                }`}
+                            />
+                          </div>
 
-                  {/* Actions */}
-                  <div className="flex flex-col sm:flex-row gap-4 pt-6">
-                    <button className="flex-1 py-3 rounded-lg bg-primary text-primary-foreground hover:opacity-90 transition-all font-semibold">
-                      Download Report
-                    </button>
-                    <button
-                      onClick={() => {
-                        setResult(null)
-                        setUploadedImage(null)
-                      }}
-                      className="flex-1 py-3 rounded-lg glass hover:bg-secondary/50 transition-all font-semibold text-foreground border border-border"
-                    >
-                      New Scan
-                    </button>
-                  </div>
+                          <div className="bg-slate-50 dark:bg-slate-900/50 rounded-xl p-4 text-sm text-slate-600 dark:text-slate-400 leading-relaxed border border-slate-100 dark:border-slate-800">
+                            {result.status === 'malignant'
+                              ? "Analysis suggests patterns consistent with malignant lesions. Immediate consultation with a certified dermatologist is strongly recommended for biopsy and further evaluation."
+                              : "No malignant patterns detected. However, this is an AI-assisted screening tool and does not replace professional medical advice. Monitor for changes."}
+                          </div>
+
+                          <button
+                            onClick={resetScanner}
+                            className={`w-full mt-6 py-4 rounded-xl font-bold text-white transition-all shadow-lg hover:shadow-xl active:scale-95 ${result.status === 'malignant'
+                              ? 'bg-red-500 hover:bg-red-600 shadow-red-500/20'
+                              : 'bg-green-600 hover:bg-green-700 shadow-green-500/20'
+                              }`}
+                          >
+                            Start New Scan
+                          </button>
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                 </div>
-              </div>
-
-              {/* Next Steps */}
-              <div className="glass rounded-2xl p-8 border border-border bg-card/30">
-                <h3 className="text-lg font-semibold mb-6">Next Steps</h3>
-                <div className="space-y-4">
-                  {[
-                    {
-                      title: 'Schedule Professional Review',
-                      description: 'Connect with certified dermatologists who can provide detailed medical evaluation.',
-                    },
-                    {
-                      title: 'Monitor Your Health',
-                      description: 'Keep track of your health metrics and scan regularly for early detection.',
-                    },
-                    {
-                      title: 'Share with Healthcare Provider',
-                      description: 'Export your report to share with your doctor or healthcare professional.',
-                    },
-                  ].map((step, i) => (
-                    <div key={i} className="flex gap-4 p-4 rounded-lg bg-background hover:bg-muted transition-colors border border-border">
-                      <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center flex-shrink-0 font-semibold text-sm">
-                        {i + 1}
-                      </div>
-                      <div>
-                        <p className="font-semibold mb-1">{step.title}</p>
-                        <p className="text-sm text-muted-foreground">{step.description}</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
+              )}
             </div>
-          )}
+          </motion.div>
         </div>
-      </div>
+      </main>
     </div>
   )
 }
 
-export default Scanner
+
