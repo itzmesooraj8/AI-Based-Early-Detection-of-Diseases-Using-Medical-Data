@@ -21,6 +21,7 @@ import { ModeToggle } from "@/components/mode-toggle"
 export default function ScannerPage() {
   const [isCameraActive, setIsCameraActive] = useState(false)
   const [isScanning, setIsScanning] = useState(false)
+  const [cameraError, setCameraError] = useState<string | null>(null)
   const [capturedImage, setCapturedImage] = useState<string | null>(null)
   const [result, setResult] = useState<{
     status: 'malignant' | 'benign';
@@ -80,12 +81,14 @@ export default function ScannerPage() {
         setResult(data)
         setIsScanning(false)
         if (data.status === 'malignant') {
-          toast.error("Potential anomaly detected. Consult a specialist.", {
+          toast.error("Analysis Complete: Anomaly Detected", {
+            description: "Confidence: " + data.confidence + "%. Immediate consultation recommended.",
             className: "border-red-500 text-red-500",
-            duration: 5000
+            duration: 8000
           })
         } else {
-          toast.success("Analysis complete. No immediate anomalies detected.", {
+          toast.success("Analysis Complete: Benign", {
+            description: "Confidence: " + data.confidence + "%. No immediate anomalies detected.",
             className: "border-green-500 text-green-500",
             duration: 5000
           })
@@ -95,8 +98,8 @@ export default function ScannerPage() {
     } catch (error: any) {
       console.error('Error:', error)
       setIsScanning(false)
-      toast.error(error.message || "Connection to AI Core failed", {
-        description: "Please ensure the backend server is running."
+      toast.error("Diagnostic Engine Offline", {
+        description: error.message || "Unable to reach AI Core. Please check connection."
       })
     }
   }
@@ -105,6 +108,7 @@ export default function ScannerPage() {
     setCapturedImage(null)
     setResult(null)
     setIsCameraActive(false)
+    setCameraError(null)
   }
 
   return (
@@ -171,7 +175,10 @@ export default function ScannerPage() {
               {!capturedImage && !isCameraActive && (
                 <div className="flex gap-4">
                   <button
-                    onClick={() => setIsCameraActive(true)}
+                    onClick={() => {
+                      setIsCameraActive(true)
+                      setCameraError(null)
+                    }}
                     className="btn-primary flex items-center gap-2 group"
                   >
                     <Camera className="w-5 h-5 group-hover:scale-110 transition-transform" />
@@ -255,8 +262,23 @@ export default function ScannerPage() {
                 </div>
               )}
 
+              {/* Camera Error State */}
+              {cameraError && (
+                <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center text-red-500 bg-red-50/90 dark:bg-red-900/90 backdrop-blur-sm border-2 border-red-500 m-4 rounded-3xl z-50 animate-in fade-in zoom-in duration-300">
+                  <AlertCircle className="w-12 h-12 mb-4" />
+                  <p className="font-bold text-lg mb-2">Camera Access Error</p>
+                  <p className="text-sm max-w-[200px] mb-6 text-red-100">{cameraError}</p>
+                  <button
+                    onClick={() => setCameraError(null)}
+                    className="px-6 py-2 bg-white text-red-600 font-bold rounded-xl shadow-lg hover:scale-105 transition-transform"
+                  >
+                    Dismiss
+                  </button>
+                </div>
+              )}
+
               {/* Live Camera Feed */}
-              {isCameraActive && !capturedImage && (
+              {isCameraActive && !capturedImage && !cameraError && (
                 <div className="absolute inset-0 bg-black">
                   <Webcam
                     audio={false}
@@ -264,6 +286,13 @@ export default function ScannerPage() {
                     screenshotFormat="image/jpeg"
                     className="absolute inset-0 w-full h-full object-cover"
                     videoConstraints={{ facingMode: "environment" }}
+                    onUserMedia={() => setCameraError(null)}
+                    onUserMediaError={(err) => {
+                      console.error("Camera Error:", err);
+                      setCameraError("Camera access denied or unavailable. Please check permissions.");
+                      setIsCameraActive(false);
+                      toast.error("Camera access failed", { description: "Please use the upload option instead." });
+                    }}
                   />
                   {/* Camera Overlay UI */}
                   <div className="absolute inset-0 border-[1px] border-white/20 m-6 rounded-3xl pointer-events-none">
