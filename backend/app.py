@@ -3,6 +3,7 @@ import io
 import sys
 import numpy as np
 from flask import Flask, request, jsonify
+from fpdf import FPDF
 from flask_cors import CORS
 from PIL import Image
 from tensorflow.keras.models import load_model
@@ -142,6 +143,35 @@ def health():
         'model_type': 'CNN (ResNet Architecture)',
         'mode': 'production'
     })
+
+
+@app.route('/generate_report', methods=['POST'])
+def generate_report():
+    """Generate a simple PDF diagnostic report.
+    Expects JSON body with `date`, `status`, and `confidence`.
+    """
+    try:
+        data = request.get_json(force=True)
+        pdf = FPDF()
+        pdf.add_page()
+        pdf.set_font("Arial", size=12)
+
+        pdf.cell(200, 10, txt="VitalGuard AI - Diagnostic Report", ln=1, align='C')
+        pdf.cell(200, 10, txt=f"Date: {data.get('date')}", ln=1)
+        pdf.cell(200, 10, txt=f"Prediction: {data.get('status')}", ln=1)
+        pdf.cell(200, 10, txt=f"Confidence Score: {data.get('confidence')}%", ln=1)
+
+        pdf.set_text_color(255, 0, 0)
+        pdf.cell(200, 10, txt="Disclaimer: This is an AI tool. Consult a doctor.", ln=1)
+
+        pdf_bytes = pdf.output(dest='S').encode('latin-1')
+        return (pdf_bytes, 200, {
+            'Content-Type': 'application/pdf',
+            'Content-Disposition': 'attachment; filename=report.pdf'
+        })
+    except Exception as e:
+        print(f"Report generation error: {e}")
+        return jsonify({'error': 'Report generation failed', 'details': str(e)}), 500
 
 if __name__ == '__main__':
     print("Starting VitalGuard AI Backend...")
