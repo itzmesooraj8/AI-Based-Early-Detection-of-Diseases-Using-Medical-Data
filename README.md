@@ -10,7 +10,7 @@
 
 -   **Real-Time AI Inference:** Sub-millisecond diagnostic capabilities powered by optimized edge-ready models.
 -   **Precision Engineering:** Utilizing ResNet-152V2 architecture for 99.9% clinical accuracy in lesion classification.
--   **God-Tier UI/UX:** A visually stunning, glassmorphism-inspired interface featuring smooth Framer Motion animations and dynamic interactions.
+-   ** UI/UX:** A visually stunning, glassmorphism-inspired interface featuring smooth Framer Motion animations and dynamic interactions.
 -   **2026 Architecture:** Built on the latest stack including Next.js 15 (App Router), React 19, and TailwindCSS v4 (conceptual).
 -   **Secure & Private:** Local-first processing ensuring patient data privacy with military-grade encryption standards.
 -   **Comprehensive Dashboard:** Real-time analytics, scan history with time-travel inspection, and customizable user settings.
